@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/2022-scoreboard/assets/favicon.17e50649.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Scoreboard</title>
+    <script type="module" crossorigin src="/2022-scoreboard/assets/index.dd52d637.js"></script>
+    <link rel="stylesheet" href="/2022-scoreboard/assets/index.c58c8f47.css">
+  </head>
+  <body class="flex flex-col bg-gray-300 justify-center max-w-[1300px] mx-auto my-2">
+    
+    <header class="flex flex-row justify-evenly w-[100%] ">
+
+      <section class="flex flex-row justify-evenly w-[30%] float-left">
+        <div class="float-left flex flex-col justify-center align-middle w-[48%]">
+          <div id="blue-name" class="text-center text-size-[20px]">Blue</div>
+          <div class="h-[7%]"></div>
+          <div id="blue-role" class="text-center text-size-[30px]">Seeker</div>  
+        </div>
+        <div class="flex flex-col justify-center align-middle shadow-xl w-[48%] border-blue-700 border-solid border-width-[6px] bg-blue-200 rounded-[9px] max-h-45 max-w-45"
+          style="aspect-ratio:1/1;">
+          <div id="blue-scoreboard" class="text-center text-size-[70px] p-3">0</div>
+        </div>
+      </section>
+
+      <!-- timer and timestamp, use a fsm for this -->
+      <nav class="flex flex-col items-center w-[40%] h-full">
+        <nav>
+          <table id="game-state-board" class="border-collapse w-[100%]">
+            <tr>
+              <td id="r1-header" colspan="3" class="board-inactive w-[50%]">Round 1</td>
+              <td id="r2-header" colspan="3" class="board-inactive w-[50%]">Round 2</td>
+            </tr>
+            <tr>
+              <td id="r1-setting" class="board-inactive w-[16.67%]"><button id="r1-setting-btn" class="">Setting</button></td>
+              <td id="r1-break"  class="board-inactive w-[16.67%]"><button id="r1-break-btn" class="">Lagori Break</button></td>
+              <td id="r1-build"  class="board-inactive w-[16.67%]"><button id="r1-build-btn" class="">Lagori Build</button></td>
+              <td id="r2-setting" class="board-inactive w-[16.67%]"><button id="r2-setting-btn" class="">Setting</button></td>
+              <td id="r2-break"  class="board-inactive w-[16.67%]"><button id="r2-break-btn" class="">Lagori Break</button></td>
+              <td id="r2-build"  class="board-inactive w-[16.67%]"><button id="r2-build-btn" class="">Lagori Build</button></td>
+            </tr>
+          </table>
+        </nav>
+
+        <!-- <nav class="flex flex-row items-center justify-evenly w-[100%]">
+          <div class="flex flex-col items-stretch w-[100%]"> 
+            <span class="block px-1.5 py-1 border-solid border border-blue-600 bg-yellow-200 text-center w-[100%]">Round 1</span>
+            <div class="flex flex-row items-stretch">
+              <button class="block px-1.5 py-1 border-solid border border-blue-600 bg-yellow-200 w-full">Setting</button>
+              <button class="block px-1.5 py-1 border-solid border border-blue-600 bg-light-blue-200 w-full">Lagori Break</button>
+              <button class="block px-1.5 py-1 border-solid border border-blue-600 bg-light-blue-200 w-full">Lagori Build</button>
+            </div>
+          </div>
+            <div class="flex flex-col items-stretch w-[100%]"> 
+              <span class="block px-1.5 py-1 border-solid border border-blue-600 bg-light-blue-200 text-center w-[100%]">Round 2</span>
+              <div class="flex flex-row items-stretch">
+                <button class="block px-1.5 py-1 border-solid border border-blue-600 bg-light-blue-200 w-full">Setting</button>
+                <button class="block px-1.5 py-1 border-solid border border-blue-600 bg-light-blue-200 w-full">Lagori Break</button>
+                <button class="block px-1.5 py-1 border-solid border border-blue-600 bg-light-blue-200 w-full">Lagori Build</button>
+              </div>
+            </div>
+        </nav> -->
+    
+      <fieldset class="flex flex-col h-full items-center w-[80%]">
+        <p id='timer' class="timer">01:00.00</p>
+        <div class="text-size-[23px] flex flex-row justify-around w-full items-center">
+          <button id="timer-start" class="timer-active">START</button>
+          <button id="timer-stop" class="timer-inactive">PAUSE</button>
+          <button id="timer-reset" class="timer-inactive">RESET</button>
+        </div>
+      </fieldset>
+      </nav>
+
+      <section class="flex flex-row w-[30%] justify-evenly float-right">
+        <div class="flex flex-col justify-center align-middle shadow-xl w-[48%] border-red-700 border-solid border-width-[6px] bg-red-200 rounded-[9px] max-h-45 max-w-45"
+        style="aspect-ratio:1/1;">
+        <div id="red-scoreboard" class="text-center text-size-[70px] p-3">0</div>
+      </div>
+        <div class="float-left flex flex-col justify-center align-middle w-[48%]">
+          <div id="red-name" class="text-center text-size-[20px]">Red</div>
+          <div class="h-[7%]"></div>
+          <div id="red-role" class="text-center text-size-[30px]">Hitter</div>  
+        </div>
+  
+      </section>
+
+    </header>
+
+    
+    <main class="flex flex-col items-stretch mx-8 w-[calc(100%-4rem)]">
+      
+      <section class="my-3 flex flex-row justify-around h-[20%]">
+        <div id="blue-eventboard" class="eventboard bg-blue-300">
+           <div class="sbheader"><span>Time</span><span>Action</span><span>Score</span></div>
+           <div id="blue-eventboard-records" class="w-[100%]">
+           </div>
+           <div class="placeholder"><span></span><span></span><span></span></div>
+        </div> 
+        <!-- apparently removing h-[100%] solves the problem of not aligning -->
+        <div class="flex w-[10%] min-w-20 flex-col justify-center justify-evenly content-around">
+          <button class="icon-button">
+            <svg  fill="white" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+            width="18px" height="18px" viewBox="0 0 407.096 407.096" style="enable-background:new 0 0 407.096 407.096;"
+            xml:space="preserve">
+                <path d="M402.115,84.008L323.088,4.981C319.899,1.792,315.574,0,311.063,0H17.005C7.613,0,0,7.614,0,17.005v373.086
+                  c0,9.392,7.613,17.005,17.005,17.005h373.086c9.392,0,17.005-7.613,17.005-17.005V96.032
+                  C407.096,91.523,405.305,87.197,402.115,84.008z M300.664,163.567H67.129V38.862h233.535V163.567z"/>
+                <path d="M214.051,148.16h43.08c3.131,0,5.668-2.538,5.668-5.669V59.584c0-3.13-2.537-5.668-5.668-5.668h-43.08
+                  c-3.131,0-5.668,2.538-5.668,5.668v82.907C208.383,145.622,210.92,148.16,214.051,148.16z"/>
+              </svg> 
+              <span class="pl-4">Save</span>
+          </button>
+          <button class="icon-button">
+            <svg fill="white" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+              viewBox="0 0 374.116 374.116" style="enable-background:new 0 0 374.116 374.116;" xml:space="preserve" width="18px" height="18px">
+              <path d="M344.058,207.506c-16.568,0-30,13.432-30,30v76.609h-254v-76.609c0-16.568-13.432-30-30-30c-16.568,0-30,13.432-30,30
+                v106.609c0,16.568,13.432,30,30,30h314c16.568,0,30-13.432,30-30V237.506C374.058,220.938,360.626,207.506,344.058,207.506z"/>
+              <path d="M123.57,135.915l33.488-33.488v111.775c0,16.568,13.432,30,30,30c16.568,0,30-13.432,30-30V102.426l33.488,33.488
+                c5.857,5.858,13.535,8.787,21.213,8.787c7.678,0,15.355-2.929,21.213-8.787c11.716-11.716,11.716-30.71,0-42.426L208.271,8.788
+                c-11.715-11.717-30.711-11.717-42.426,0L81.144,93.489c-11.716,11.716-11.716,30.71,0,42.426
+                C92.859,147.631,111.855,147.631,123.57,135.915z"/>
+            </svg>
+            <span class="pl-4">Load</span>
+          </button>
+          <button class="icon-button">
+            <svg fill="white" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="18px" height="18px" viewBox="0 0 256 256" xml:space="preserve">
+              <g transform="translate(128 128) scale(0.7 0.7)" style="">
+                <g style="stroke: white; stroke-width: 0; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: white; opacity: 1;" transform="translate(-255.15 -255.15000000000006) scale(5.67 5.67)" >
+                  <path d="M 56.375 60.616 c -0.75 -1.027 -2.151 -1.388 -3.266 -0.776 c -2.472 1.356 -5.237 2.065 -8.109 2.065 c -7.2 0 -13.346 -4.532 -15.778 -10.887 h 5.968 c 0.734 0 1.41 -0.402 1.759 -1.049 c 0.349 -0.646 0.316 -1.432 -0.085 -2.046 L 20.269 22.551 c -0.37 -0.565 -0.999 -0.905 -1.674 -0.905 s -1.304 0.34 -1.674 0.905 L 0.326 47.924 c -0.402 0.614 -0.435 1.4 -0.085 2.046 C 0.59 50.616 1.266 51.019 2 51.019 h 7.609 C 12.482 67.96 27.253 80.905 45 80.905 c 6.736 0 13.203 -1.841 18.864 -5.348 c 1.272 -0.788 1.586 -2.509 0.704 -3.718 L 56.375 60.616 z" style="stroke: white; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: white fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round" />
+                  <path d="M 89.759 39.227 c -0.349 -0.646 -1.024 -1.048 -1.759 -1.048 h -7.753 C 77.051 21.632 62.465 9.095 45 9.095 c -6.086 0 -12.01 1.525 -17.291 4.432 c -1.307 0.719 -1.7 2.42 -0.883 3.668 l 7.613 11.628 c 0.694 1.06 2.072 1.499 3.213 0.947 c 2.277 -1.1 4.78 -1.675 7.348 -1.675 c 6.893 0 12.827 4.153 15.455 10.083 h -5.645 c -0.734 0 -1.41 0.402 -1.759 1.048 c -0.35 0.646 -0.317 1.432 0.085 2.046 l 16.595 25.373 c 0.369 0.564 0.999 0.905 1.674 0.905 s 1.305 -0.341 1.674 -0.905 l 16.595 -25.373 C 90.076 40.658 90.108 39.873 89.759 39.227 z" style="stroke: white; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: white; fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round" />
+                </g>
+              </g>
+            </svg>
+            <span class="pl-2">Convert</span>
+          </button>
+            
+        </div>
+        <div id="red-eventboard" class="eventboard bg-red-300">
+          <div class="sbheader"><span>Time</span><span>Action</span><span>Score</span></div>
+          <div id="red-eventboard-records" class="w-[100%]">
+         </div>
+          <div class="placeholder"><span></span><span></span><span></span></div>
+        </div>
+      </section>
+      
+      <button id="round-1-button" class="collapsible mt-5 bg-purple-200 border-dotted border-[2.5px] border-purple-900 text-center hover:bg-purple-300"> Round 1</button>
+      <round-box id="round-1-content" class="collapsible-content">
+        <div class="pb-2 pt-5 bg-purple-100">
+          <div class="flex flex-row justify-evenly">
+
+            <section id="round-1-left" class="round-section">
+
+            </section>
+
+            <section id="round-1-right" class="round-section">
+
+            </section>
+          
+            
+          </div>
+        </div>
+      </round-box>
+
+      <button id="round-2-button" class="collapsible mt-5 bg-purple-200 border-dotted border-[2.5px] border-purple-900 text-center hover:bg-purple-300"> Round 2</button>
+      <round-box id="round-2-content" class="collapsible-content">
+        <div class="pb-2 pt-5 bg-purple-100">
+          <div class="flex flex-row justify-evenly">
+
+            <section id="round-2-left" class="round-section">
+
+            </section>
+
+            <section id="round-2-right" class="round-section">
+
+            </section>
+          
+            
+          </div>
+        </div>
+      </round-box>
+
+
+      
+
+    </main>
+
+    
+
+
+
+    <button id='timer_start' class=""></button>
+    
+  </body>
+</html>
