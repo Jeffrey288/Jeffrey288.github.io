@@ -13,7 +13,7 @@ const ze=function(){const e=document.createElement("link").relList;if(e&&e.suppo
             </td>
             </tr>
         </table>
-        <button id="${t+"seeker-complete-btn"}" class="end-button pointer-events-none">BUILT</button>
+        <button id="${t+"seeker-complete-btn"}" class="w-[35%] end-button pointer-events-none">BUILT</button>
         </div>
         
         <div class="flex flex-row my-3">
@@ -98,7 +98,7 @@ const ze=function(){const e=document.createElement("link").relList;if(e&&e.suppo
 
     <table class="text-center items-center w-[100%] >lg:table-fixed">
         <tr>
-        <td rowspan="3" class="w-[19%]">
+        <td rowspan="3" class="w-[19%]"> 
             <p class="criteria-text">Balls</p>
             <div class="ball m-auto my-3"></div>
         </td>
