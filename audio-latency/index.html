@@ -73,6 +73,9 @@
     <tbody id="audioTableBody">
     </tbody>
 </table>
+<button id="playSound">
+    Play sound
+</button>
 <script>
     var audioDataURL = "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//uQwAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAEAAAIKQBmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmaZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzP////////////////////////////////8AAAAATGF2ZgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACCltD6sxAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//qTzCaLAAASVO8zNZeAAjMa6jc7EAJkRVZqqovAriMrDtfo5Q+JimnE8AlGugUMHBsiAAxkBLcBgA3CWIYchoGgaB0KNnngJxQKxgThps88B5EpR4h6jngPInw8UbPukSmdwFez7pTWdwFe/3Smr7o/f7pT33R/H3Snvuj+PulPfeH8feNe+8P7jnB8Rn2FxwP4fEZ+XHA/h8ufl3g/h8ufl3h/D5d9cPg0gEkDA8Hg8kFcoFgsDQPCwYKYt2xWWYnh+YsjeoaYAAx5gWDhh0YBkkCxy0cZhkCBzeX5QN4L0EXHKK+FsBbBP5GEON2xOhEBxjmHDJM53LhPkULhfSdST+scwuEXIoYF9SqlfyYMC+XDhmYKS1f84ZmBwzMFHQh/lhYKiIWCrP/EQsFRELAyWO2rtX+wBLEAA11U0g91UDFgAAAA/6q0Y6GACCAFS5U1LUqKmDAWmQ2Fnfp0GXoxBAHOOsUzmYmzl1QyIYEWcAAAA6ZGgpAT7RYWsIwPWQCMDFnMzGQ5jAPAhBABCGawgKAAQPX5CwyIYEWgAAAA7v/6k8znDjGABbgtTd3cACCxBaj5THiUYA+ovgaImQBMdoIYwAl0TEWDOEADZCAIo+4BegmAHVpg///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////xm0ErRAAAABopD4BGFdSDqmxapgIhUYOz95rkCRGBkBaAQBFbY8iyGAJIGtsnC2dAM6AAAADZQvAJ1E4EDVMWyYaDRGEQmabQgUhgeAIhABTBZEh6BQAEUXG/////////////////////////////////////////////////////////////////////////////////////////////////+pPM5tbKAB5QLUnJv8SgtQWodTx4lv/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////C2ZAIpoAAADnA0ADRS2EQAKmRbZlpa4wjiaTbCBGBwPo05jsDhVJKJVWGtAplUCFwAAAA1nAaAKdRxKVNIIM1EmWYVwWhwEABjwUBEAOvx3wSAGkY3eY///////////////////////////////////////////////////////////////////////////////////////////////////qTzPpD/4Ar6C1DyOPEoK6F6DjfYJz//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////8KZmAicAAAAOgIkAewkgI2MgGuSwAFmE8b4btwOJgkACBgC6VjEzABAFL+MPjELeHAzigAAAOgKcA28uQWbWYOgAuAFwBTB4VGNfYLkwNAFAMdMBiZjGXYYPFNf/////////////////////////////////////////////////////////////////////////////////////////////w==";
 </script>
@@ -328,6 +331,11 @@
         if (event.code === 'Space') {
             document.selectedAudioInstance._play();
         }
+    });
+
+    let playButton = document.getElementById('playSound');
+    playButton.addEventListener('mousedown', () => {
+        document.selectedAudioInstance._play();
     });
 
     const selectedAudioInstanceDisplay = document.getElementById('selectedAudioInstanceDisplay');
