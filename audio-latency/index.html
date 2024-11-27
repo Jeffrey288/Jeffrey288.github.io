@@ -73,7 +73,7 @@
     <tbody id="audioTableBody">
     </tbody>
 </table>
-<button id="playSound">
+<button id="playSound" style="width:100%; height:100px; margin: 20px; font-size: 16px;">
     Play sound
 </button>
 <script>
@@ -310,11 +310,11 @@
 
 
     const audioInstances = [
-        new AudioContextPlayer(0, '(Best) Audio Context w/ latency hint "interactive"'),
+        new AudioContextPlayer(0, '(Best) Audio Context w/ latency hint 0'),
         new AudioClassPlayer(),
-        new AudioContextPlayer(),
         new AudioElementPlayer(),
         new JSAudoElementPlayer(),
+        new AudioContextPlayer('interactive', 'Audio Context w/ latency hint "interactive" (default)'),
         new AudioContextPlayer('playback', 'Audio Context w/ latency hint "playback"'),
         new AudioContextPlayer('balanced', 'Audio Context w/ latency hint "balanced"'),
         new AudioContextPlayer('interactive', 'Audio Context w/ render quantum size 256', 256),
@@ -334,7 +334,12 @@
     });
 
     let playButton = document.getElementById('playSound');
-    playButton.addEventListener('mousedown', () => {
+    playButton.addEventListener('mousedown', (e) => {
+        // e.preventDefault();
+        document.selectedAudioInstance._play();
+    });
+    playButton.addEventListener('touchstart', (e) => {
+        e.preventDefault();
         document.selectedAudioInstance._play();
     });
 
