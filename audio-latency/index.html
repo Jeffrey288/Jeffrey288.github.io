@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Latency Tester</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: left;
+        }
+        button {
+            padding: 5px 10px;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js" integrity="sha512-xi/RZRIF/S0hJ+yJJYuZ5yk6/8pCiRlEXZzoguSMl+vk2i3m6UjUO/WcZ11blRL/O+rnj94JRGwt/CHbc9+6EA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://code.createjs.com/1.0.0/soundjs.min.js"></script></head>
+</head>
+<body>
+
+<h1>Audio Latency Tester</h1>
+<p>Select a player instance, and press the space bar to play the sound. You can feel the latency by making a large sound when tapping the space bar and hearing how long it takes for the beep to be made.</p>
+<p>Resources for debugging audio latency:</p>
+<ul>
+    <li>
+        <a href="https://webaudioapi.com/book/Web_Audio_API_Boris_Smus_html/ch01.html#s01_8">Tutorial on audio playback using AudioContext</a>
+    </li>
+    <li>
+        <a href="https://www.w3.org/TR/webaudio-1.1/">Web Audio API specification</a>
+    </li>
+    <li>Chromium source code: 
+        <ul>
+            <li>
+                <a href="https://chromium.googlesource.com/chromium/blink/+/master/Source/modules/webaudio">Web Audio API</a>
+            </li>
+            <li>
+                <a href="https://chromium.googlesource.com/chromium/blink/+/refs/heads/main/Source/platform/audio/">Platform Audio</a>
+            </li>
+            <li>
+                <a href="https://chromium.googlesource.com/chromium/src/media/+/refs/heads/main">Platform-dependent Playback Components</a>. See '/audio' and '/base' directories to see how the buffer size is selected from latencyHint, and how the OS' audio API is evoked. Windows uses the WASAPI API.
+            </li>
+        </ul>
+    </li>
+    <li>
+        <a href="https://chromium.googlesource.com/chromium/src/+/refs/tags/128.0.6613.5/docs/media/latency_tracing.md">Audio Latency Tracing</a> and <a href="https://web.dev/articles/profiling-web-audio-apps-in-chrome">Web Audio API tracing</a> in Chrome
+    </li>
+    <li>
+        <a href="https://learn.microsoft.com/en-us/windows-hardware/drivers/audio/low-latency-audio">Microsoft's guide to low latency audio</a>
+    </li>
+    <li>
+        <a href="https://github.com/miniant-git/REAL">real.exe</a>, a Windows executable that lowers audio latency by reducing audio buffer size. Also note that you can reduce latency by reinstalling your audio drivers with those that don't perform audio enhancements. See the repo for more information.
+    </li>
+</ul>
+<p>Web Audio API is basically the only interface you can use to finely control the audio playback. The current best solution I can find is constructing an AudioContext and passing latencyHint as 0.</p>
+<div id="selectedAudioInstanceDisplay" style="color: red"></div>
+<table>
+    <thead>
+        <tr>
+            <th>Audio Player</th>
+            <th>Play Sound</th>
+            <th>Estimated Latency (s)</th>
+        </tr>
+    </thead>
+    <tbody id="audioTableBody">
+    </tbody>
+</table>
+<script>
+    var audioDataURL = "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//uQwAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAEAAAIKQBmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmaZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzP////////////////////////////////8AAAAATGF2ZgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACCltD6sxAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//qTzCaLAAASVO8zNZeAAjMa6jc7EAJkRVZqqovAriMrDtfo5Q+JimnE8AlGugUMHBsiAAxkBLcBgA3CWIYchoGgaB0KNnngJxQKxgThps88B5EpR4h6jngPInw8UbPukSmdwFez7pTWdwFe/3Smr7o/f7pT33R/H3Snvuj+PulPfeH8feNe+8P7jnB8Rn2FxwP4fEZ+XHA/h8ufl3g/h8ufl3h/D5d9cPg0gEkDA8Hg8kFcoFgsDQPCwYKYt2xWWYnh+YsjeoaYAAx5gWDhh0YBkkCxy0cZhkCBzeX5QN4L0EXHKK+FsBbBP5GEON2xOhEBxjmHDJM53LhPkULhfSdST+scwuEXIoYF9SqlfyYMC+XDhmYKS1f84ZmBwzMFHQh/lhYKiIWCrP/EQsFRELAyWO2rtX+wBLEAA11U0g91UDFgAAAA/6q0Y6GACCAFS5U1LUqKmDAWmQ2Fnfp0GXoxBAHOOsUzmYmzl1QyIYEWcAAAA6ZGgpAT7RYWsIwPWQCMDFnMzGQ5jAPAhBABCGawgKAAQPX5CwyIYEWgAAAA7v/6k8znDjGABbgtTd3cACCxBaj5THiUYA+ovgaImQBMdoIYwAl0TEWDOEADZCAIo+4BegmAHVpg///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////xm0ErRAAAABopD4BGFdSDqmxapgIhUYOz95rkCRGBkBaAQBFbY8iyGAJIGtsnC2dAM6AAAADZQvAJ1E4EDVMWyYaDRGEQmabQgUhgeAIhABTBZEh6BQAEUXG/////////////////////////////////////////////////////////////////////////////////////////////////+pPM5tbKAB5QLUnJv8SgtQWodTx4lv/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////C2ZAIpoAAADnA0ADRS2EQAKmRbZlpa4wjiaTbCBGBwPo05jsDhVJKJVWGtAplUCFwAAAA1nAaAKdRxKVNIIM1EmWYVwWhwEABjwUBEAOvx3wSAGkY3eY///////////////////////////////////////////////////////////////////////////////////////////////////qTzPpD/4Ar6C1DyOPEoK6F6DjfYJz//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////8KZmAicAAAAOgIkAewkgI2MgGuSwAFmE8b4btwOJgkACBgC6VjEzABAFL+MPjELeHAzigAAAOgKcA28uQWbWYOgAuAFwBTB4VGNfYLkwNAFAMdMBiZjGXYYPFNf/////////////////////////////////////////////////////////////////////////////////////////////w==";
+</script>
+<audio id="audio" src="data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//uQwAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAEAAAIKQBmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmaZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzP////////////////////////////////8AAAAATGF2ZgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACCltD6sxAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//qTzCaLAAASVO8zNZeAAjMa6jc7EAJkRVZqqovAriMrDtfo5Q+JimnE8AlGugUMHBsiAAxkBLcBgA3CWIYchoGgaB0KNnngJxQKxgThps88B5EpR4h6jngPInw8UbPukSmdwFez7pTWdwFe/3Smr7o/f7pT33R/H3Snvuj+PulPfeH8feNe+8P7jnB8Rn2FxwP4fEZ+XHA/h8ufl3g/h8ufl3h/D5d9cPg0gEkDA8Hg8kFcoFgsDQPCwYKYt2xWWYnh+YsjeoaYAAx5gWDhh0YBkkCxy0cZhkCBzeX5QN4L0EXHKK+FsBbBP5GEON2xOhEBxjmHDJM53LhPkULhfSdST+scwuEXIoYF9SqlfyYMC+XDhmYKS1f84ZmBwzMFHQh/lhYKiIWCrP/EQsFRELAyWO2rtX+wBLEAA11U0g91UDFgAAAA/6q0Y6GACCAFS5U1LUqKmDAWmQ2Fnfp0GXoxBAHOOsUzmYmzl1QyIYEWcAAAA6ZGgpAT7RYWsIwPWQCMDFnMzGQ5jAPAhBABCGawgKAAQPX5CwyIYEWgAAAA7v/6k8znDjGABbgtTd3cACCxBaj5THiUYA+ovgaImQBMdoIYwAl0TEWDOEADZCAIo+4BegmAHVpg///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////xm0ErRAAAABopD4BGFdSDqmxapgIhUYOz95rkCRGBkBaAQBFbY8iyGAJIGtsnC2dAM6AAAADZQvAJ1E4EDVMWyYaDRGEQmabQgUhgeAIhABTBZEh6BQAEUXG/////////////////////////////////////////////////////////////////////////////////////////////////+pPM5tbKAB5QLUnJv8SgtQWodTx4lv/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////C2ZAIpoAAADnA0ADRS2EQAKmRbZlpa4wjiaTbCBGBwPo05jsDhVJKJVWGtAplUCFwAAAA1nAaAKdRxKVNIIM1EmWYVwWhwEABjwUBEAOvx3wSAGkY3eY///////////////////////////////////////////////////////////////////////////////////////////////////qTzPpD/4Ar6C1DyOPEoK6F6DjfYJz//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////8KZmAicAAAAOgIkAewkgI2MgGuSwAFmE8b4btwOJgkACBgC6VjEzABAFL+MPjELeHAzigAAAOgKcA28uQWbWYOgAuAFwBTB4VGNfYLkwNAFAMdMBiZjGXYYPFNf/////////////////////////////////////////////////////////////////////////////////////////////w=="></audio>
+
+<script>
+    // navigator.mediaDevices.getUserMedia({
+    //     audio: true,
+    // })
+    // .then(function(stream) {
+    //     const audioContext = new AudioContext();
+    //     const analyser = audioContext.createAnalyser();
+    //     const microphone = audioContext.createMediaStreamSource(stream);
+    //     const scriptProcessor = audioContext.createScriptProcessor(256, 1, 1);
+
+    //     analyser.smoothingTimeConstant = 0.8;
+    //     analyser.fftSize = 1024;
+
+    //     microphone.connect(analyser);
+    //     analyser.connect(scriptProcessor);
+    //     scriptProcessor.connect(audioContext.destination);
+    //     scriptProcessor.onaudioprocess = function() {
+    //         const array = new Uint8Array(analyser.frequencyBinCount);
+    //         analyser.getByteFrequencyData(array);
+    //         const arraySum = array.reduce((a, value) => a + value, 0);
+    //         const average = arraySum / array.length;
+
+    //         const nyquist = audioContext.sampleRate / 2;
+    //         const frequencyIndex1000 = Math.round(1000 / nyquist * array.length);
+    //         const loudness1000Hz = array[frequencyIndex1000];
+    //         const frequencyIndex1500 = Math.round(1500 / nyquist * array.length);
+    //         const loudness1500Hz = array[frequencyIndex1500];
+    //         if (true) {
+    //             console.log(Math.round(performance.now()), loudness1000Hz, loudness1500Hz);
+    //         }
+    //     };
+    // })
+    // .catch(function(err) {
+    //     /* handle the error */
+    //     console.error(err);
+    // });
+
+    window.AudioContext = window.AudioContext || window.webkitAudioContext;
+    
+    class AudioPlayer {
+        constructor(name) {
+            this.name = name;
+            this.averageLatency = 0;
+        }
+
+        setup() {
+            throw new Error('setup method must be implemented in the child class.');
+        }
+
+        play() {
+            throw new Error('play method must be implemented in the child class.');
+        }
+
+        _play() {
+            this.play();
+        }
+
+        getLatency() {
+            return null
+        }
+    }
+
+    class AudioElementPlayer extends AudioPlayer {
+        constructor() {
+            super('Audio Element');
+            this.audioElement = document.getElementById('audio');
+        }
+
+        setup() {
+            this.audioElement.load();
+        }
+
+        play() {
+            this.audioElement.play();
+        }
+    }
+
+    class AudioClassPlayer extends AudioPlayer {
+        constructor() {
+            super('Audio Class');
+            this.snd = new Audio(audioDataURL);  
+        }
+
+        setup() {
+
+        }
+
+        play() {
+            this.snd.play();
+        }
+    }
+
+    class AudioContextPlayer extends AudioPlayer {
+        constructor(latencyHint = 'interactive', name = 'Audio Context', renderSizeHint = null) {
+            super(name);
+            if (renderSizeHint) {
+                this.audioContext = new AudioContext({latencyHint, renderSizeHint});
+                console.log(name)
+            } else {
+                this.audioContext = new AudioContext({latencyHint});
+            }
+            this.audioBuffer = null;
+            console.log(name, this.audioContext.outputLatency, this.audioContext.baseLatency);
+        }
+
+        async setup() {
+            const response = await fetch(audioDataURL);
+            const arrayBuffer = await response.arrayBuffer();
+            this.audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+            console.log(this.audioBuffer)
+
+        }
+        
+        play() {
+            // Create a buffer source
+            console.time("createBufferSource");
+            this.source = this.audioContext.createBufferSource();
+            console.timeEnd("createBufferSource");
+
+            // Set the buffer
+            console.time("setBuffer");
+            this.source.buffer = this.audioBuffer;
+            console.timeEnd("setBuffer");
+
+            // Connect to destination
+            console.time("connect");
+            this.source.connect(this.audioContext.destination);
+            console.timeEnd("connect");
+
+            // Start playback
+            console.time("startPlayback");
+            this.source.start();
+            console.timeEnd("startPlayback");        
+        }
+
+        getLatency() {
+            return this.audioContext.outputLatency + this.audioContext.baseLatency;
+        }
+    }
+
+    class AudioContextResumePlayer extends AudioContextPlayer {
+        constructor() {
+            super('interactive', 'Audio Context w/ resumeContext');
+        }
+
+        play() {
+            this.audioContext.resume().then(() => {
+                super.play();
+            });
+        }
+    }
+
+    class OscillatorPlayer extends AudioPlayer {
+        constructor() {
+            super('Oscillator');
+            this.audioContext = new AudioContext();
+                       
+        }
+
+        setup() {
+            this.oscillator = this.audioContext.createOscillator();
+            this.oscillator.type = "sine";
+            this.oscillator.frequency.setValueAtTime(1000, this.audioContext.currentTime); // value in hertz
+            this.volume = this.audioContext.createGain();
+            this.oscillator.connect(this.volume);
+            this.volume.connect(this.audioContext.destination);
+            this.volume.gain.value = 1;
+            this.started = false
+        }
+        
+        play() {
+            if (!this.started) {
+                this.oscillator.start();
+                this.started = true;
+            }
+
+            this.volume.gain.value = 1;
+            console.log('start', performance);
+            setTimeout(() => {
+                this.volume.gain.value = 0;
+                console.log('stop', performance);
+            }, 100);
+
+            // set volume to 1
+            
+        }
+
+        getLatency() {
+            return this.audioContext.outputLatency + this.audioContext.baseLatency;
+        }
+    }
+    
+
+    class HowlerPlayer extends AudioPlayer {
+        constructor() {
+            super('Howler');
+            this.sound = new Howl({
+                src: [audioDataURL],
+            });
+        }
+
+        setup() {
+            this.sound.on('load', () => {
+                console.log('loaded');
+            });
+        }
+
+        play() {
+            this.sound.play();
+        }
+    }
+
+    class JSAudoElementPlayer extends AudioPlayer {
+        constructor() {
+            super('JS Audio Element');
+            this.audioElement = new Audio(audioDataURL);
+        }
+
+        setup() {
+            this.audioElement.load();
+        }
+
+        play() {
+            this.audioElement.play();
+        }
+    }
+
+
+    const audioInstances = [
+        new AudioContextPlayer(0, '(Best) Audio Context w/ latency hint "interactive"'),
+        new AudioClassPlayer(),
+        new AudioContextPlayer(),
+        new AudioElementPlayer(),
+        new JSAudoElementPlayer(),
+        new AudioContextPlayer('playback', 'Audio Context w/ latency hint "playback"'),
+        new AudioContextPlayer('balanced', 'Audio Context w/ latency hint "balanced"'),
+        new AudioContextPlayer('interactive', 'Audio Context w/ render quantum size 256', 256),
+        new AudioContextPlayer('interactive', 'Audio Context w/ render quantum size 64', 64),
+        new AudioContextPlayer('interactive', 'Audio Context w/ render quantum size 1', 1),
+        new AudioContextPlayer('interactive', 'Audio Context w/ render quantum size 128', 128),
+        new AudioContextPlayer('interactive', 'Audio Context w/ render quantum size 10000', 10000),
+        new AudioContextResumePlayer(),
+        new OscillatorPlayer(),
+        new HowlerPlayer(),
+    ];
+
+    document.addEventListener('keydown', (event) => {
+        if (event.code === 'Space') {
+            document.selectedAudioInstance._play();
+        }
+    });
+
+    const selectedAudioInstanceDisplay = document.getElementById('selectedAudioInstanceDisplay');
+    selectedAudioInstanceDisplay.textContent = 'No audio instance selected';
+
+    // Setup all audio instances
+    audioInstances.forEach(instance => {
+        instance.setup();
+        const tableBody = document.getElementById('audioTableBody');
+        
+        const row = document.createElement('tr');
+
+        const playerNameCell = document.createElement('td');
+        playerNameCell.textContent = instance.name;
+        row.appendChild(playerNameCell);
+
+        const selectButtonCell = document.createElement('td');
+        const selectButton = document.createElement('button');
+        selectButton.textContent = 'Select';
+        selectButton.onclick = () => {
+            document.selectedAudioInstance = instance;
+            updateSelectedAudioInstanceDisplay();
+        };
+        selectButtonCell.appendChild(selectButton);
+        row.appendChild(selectButtonCell);
+
+        const latencyCell = document.createElement('td');
+        latencyCell.textContent = instance.getLatency();
+        row.appendChild(latencyCell);
+
+        tableBody.appendChild(row);
+    });
+        
+
+    function updateSelectedAudioInstanceDisplay() {
+        if (document.selectedAudioInstance) {
+            selectedAudioInstanceDisplay.textContent = `Selected Audio Instance: ${document.selectedAudioInstance.name}`;
+        } else {
+            selectedAudioInstanceDisplay.textContent = 'No audio instance selected';
+        }
+    }
+
+</script>
+
+</body>
+</html>
