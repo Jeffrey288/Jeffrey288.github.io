@@ -174,7 +174,14 @@
             modifiedLines.forEach((line, index) => {
                 const originalLine = line.trim();
                 
-                if (originalLine.startsWith('BPM:')) {
+                if (originalLine.startsWith('TITLE:')) {
+                    const [_, ...rest] = originalLine.split(':');
+                    const originalName = rest.join(':').trim();
+                    const newName = `${originalName} (x${multiplier.toFixed(2)})`;
+                    modifiedLines[index] = `TITLE:${newName}`;
+                    changes.add(index);
+                }
+                else if (originalLine.startsWith('BPM:')) {
                     const bpm = parseFloat(originalLine.split(':')[1].trim());
                     modifiedLines[index] = `BPM:${(bpm * multiplier).toFixed(2)}`;
                     changes.add(index);
@@ -199,7 +206,7 @@
                     const originalFilename = rest.join(':').trim();
                     const ext = originalFilename.split('.').pop();
                     const base = originalFilename.slice(0, -(ext.length + 1));
-                    modifiedLines[index] = `WAVE: ${base} (x${multiplier.toFixed(2)}).wav`;
+                    modifiedLines[index] = `WAVE:${base} (x${multiplier.toFixed(2)}).wav`;
                     changes.add(index);
                 }
             });
