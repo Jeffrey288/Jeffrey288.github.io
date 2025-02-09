@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TJA Speed Adjuster</title>
+    <style>
+        .step { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .hidden { display: none; }
+        .highlight { background-color: yellow; }
+        #tjaPreview {
+            font-family: monospace;
+            font-size: 12px;
+            line-height: 1.2;
+            height: 400px;
+            overflow: auto;
+            white-space: pre-wrap;
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+        .audio-container { margin: 20px 0; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="./js/jschardet.min.js"></script>
+    <script>
+        OggVorbisEncoderConfig = {
+            memoryInitializerPrefixURL: "./js/"   // must end with slash
+            // => changed to javascripts/OggVorbisEncoder.min.js.mem
+        };
+        Mp3LameEncoderConfig = {
+            memoryInitializerPrefixURL: "./js/"   // must end with slash
+            // => changed to javascripts/Mp3LameEncoder.min.js.mem
+        };
+    </script>
+    <script src="./js/Mp3LameEncoder.min.js"></script>
+    <script src="./js/OggVorbisEncoder.min.js"></script>
+    <script src="./js/WavAudioEncoder.min.js"></script>
+</head>
+<body>
+    <h1>TJA Speed Adjuster</h1>
+    <!-- Step 1: Upload -->
+    <div class="step" id="uploadSection">
+        <h2>Step 1: Upload .zip file containing .tja and music file</h2>
+        <input type="file" id="zipInput" accept=".zip">
+        <div id="fileInfo"></div>
+    </div>
+
+    <!-- Step 2: Preview -->
+    <div class="step hidden" id="previewSection">
+        <h2>Step 2: Preview Changes</h2>
+        <label>Speed Multiplier (e.g., 0.9 or x0.9): <input type="text" id="multiplierInput" value="1.0"></label>
+        <button onclick="applyMultiplier()">Apply Changes</button>
+
+        <div class="audio-container">
+            <h3>Audio Preview</h3>
+            <audio id="audioPlayer" controls></audio>
+        </div>
+
+        <h3>TJA Preview <button onclick="toggleEdit()">Edit TJA</button></h3>
+        <div id="tjaPreview"></div>
+        <textarea id="tjaEditor" class="hidden" style="width:100%; height:300px;"></textarea>
+    </div>
+
+    <!-- Step 3: Download -->
+    <div class="step hidden" id="downloadSection">
+        <h2>Step 3: Download</h2>
+        <button onclick="packageAndDownload()">Download Modified Files</button>
+    </div>
+
+    <script>
+
+
+        let originalTjaContent = '';
+        let modifiedTjaContent = '';
+        let originalAudioFile = null;
+        let audioBuffer = null;
+        let multiplier = 1.0;
+        let originalTjaName = '';
+        let originalAudioName = '';
+        let modifiedAudioBlob = null;
+
+        // Detect encoding using jschardet
+        const detectEncoding = (buffer) => {
+            const detected = jschardet.detect(
+                String.fromCharCode.apply(null, new Uint8Array(buffer)), 
+                { detectEncodings: ["UTF-8", "SHIFT_JIS"] }
+            );
+            return detected.encoding || 'utf-8';
+        };
+
+        const decodeBuffer = (buffer) => {
+            const encoding = detectEncoding(buffer);
+            const decoder = new TextDecoder(encoding);
+            return decoder.decode(buffer);
+        };
+
+        document.getElementById('zipInput').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            const zip = await JSZip.loadAsync(file, {
+                decodeFileName: (bytes) => decodeBuffer(bytes)
+            });
+            
+            const tjaFile = zip.file(/\.tja$/i).filter(file => 
+                /(?:\/|^)(?!\.)[^/]+\.tja$/i.test(file.name)
+            )[0];
+            const audioFile = zip.file(/\.(ogg|mp3|wav)$/i)[0];
+            
+            if (!tjaFile || !audioFile) {
+                alert('Please upload a ZIP containing both a .tja file and an audio file');
+                return;
+            }
+
+            const tjaBuffer = await tjaFile.async('arraybuffer');
+            originalTjaContent = decodeBuffer(tjaBuffer);
+            originalAudioFile = await audioFile.async('arraybuffer');
+            originalTjaName = tjaFile.name.split('/').pop();
+            originalAudioName = audioFile.name.split('/').pop();
+            
+            document.getElementById('fileInfo').textContent = `Loaded: ${originalTjaName} + ${originalAudioName}`;
+            document.getElementById('previewSection').classList.remove('hidden');
+            document.getElementById('downloadSection').classList.remove('hidden');
+            
+            // Initialize audio context
+            const audioContext = new AudioContext();
+            audioBuffer = await audioContext.decodeAudioData(originalAudioFile.slice(0));
+            const audioUrl = URL.createObjectURL(new Blob([originalAudioFile]));
+            document.getElementById('audioPlayer').src = audioUrl;
+        });
+
+        async function processAudio() { // do something about this
+            const offlineAudioContext = new OfflineAudioContext(audioBuffer.numberOfChannels, Math.ceil(audioBuffer.length / multiplier), audioBuffer.sampleRate);
+            const source = offlineAudioContext.createBufferSource();
+            source.buffer = audioBuffer;
+            source.playbackRate.value = multiplier;
+            source.connect(offlineAudioContext.destination);
+            source.start();
+            
+            offlineAudioContext.oncomplete = (e) => {
+                const renderedBuffer = e.renderedBuffer;
+                const extension = originalAudioName.split('.').pop();
+                // const encoder = 
+                //     extension === 'ogg' ? new OggVorbisEncoder(offlineAudioContext.sampleRate, renderedBuffer.numberOfChannels, 0.9) :
+                //     extension === 'mp3' ? new Mp3LameEncoder(offlineAudioContext.sampleRate, 128) :
+                //     extension === 'wav' ? new WavAudioEncoder(offlineAudioContext.sampleRate, renderedBuffer.numberOfChannels) :
+                //     null;
+                const encoder = new WavAudioEncoder(offlineAudioContext.sampleRate, renderedBuffer.numberOfChannels);
+                if (!encoder) {
+                    alert('Unsupported audio format');
+                    return;
+                }
+                const channelData = [];
+                for (let i = 0; i < renderedBuffer.numberOfChannels; i++) {
+                    channelData.push(renderedBuffer.getChannelData(i));
+                }
+                encoder.encode(channelData);
+                modifiedAudioBlob = new Blob([encoder.finish()], { type: `audio/${extension}` });
+                const url = URL.createObjectURL(modifiedAudioBlob);
+                document.getElementById('audioPlayer').src = url;
+            };
+            offlineAudioContext.startRendering()
+        }
+
+        function applyMultiplier() {
+            const multiplierInput = document.getElementById('multiplierInput').value.replace('x', '');
+            multiplier = parseFloat(multiplierInput);
+            if (isNaN(multiplier) || multiplier <= 0) {
+                alert('Invalid multiplier');
+                return;
+            }
+
+            console.log(originalTjaContent)
+
+            let modifiedLines = originalTjaContent.split('\n');
+            let changes = new Set();
+
+            modifiedLines.forEach((line, index) => {
+                const originalLine = line.trim();
+                
+                if (originalLine.startsWith('BPM:')) {
+                    const bpm = parseFloat(originalLine.split(':')[1].trim());
+                    modifiedLines[index] = `BPM:${(bpm * multiplier).toFixed(2)}`;
+                    changes.add(index);
+                }
+                else if (originalLine.startsWith('OFFSET:')) {
+                    const offsetText = originalLine.split(':')[1].trim();
+                    if (offsetText === '') {
+                        return;
+                    }
+                    const offset = parseFloat(offsetText);
+                    modifiedLines[index] = `OFFSET:${(offset / multiplier).toFixed(3)}`;
+                    changes.add(index);
+                }
+                else if (originalLine.startsWith('#BPMCHANGE')) {
+                    const parts = originalLine.split(' ');
+                    const bpm = parseFloat(parts[1].trim());
+                    modifiedLines[index] = `#BPMCHANGE ${(bpm * multiplier).toFixed(2)}`;
+                    changes.add(index);
+                }
+                else if (originalLine.startsWith('WAVE:')) {
+                    const [_, ...rest] = originalLine.split(':');
+                    const originalFilename = rest.join(':').trim();
+                    const ext = originalFilename.split('.').pop();
+                    const base = originalFilename.slice(0, -(ext.length + 1));
+                    modifiedLines[index] = `WAVE: ${base} (x${multiplier.toFixed(2)}).wav`;
+                    changes.add(index);
+                }
+            });
+
+            modifiedTjaContent = modifiedLines.join('\n');
+            
+            const preview = document.getElementById('tjaPreview');
+            preview.innerHTML = modifiedLines.map((line, index) => 
+                changes.has(index) ? `<div class="highlight">${line}</div>` : line
+            ).join('\n');
+
+            document.getElementById('tjaEditor').value = modifiedTjaContent;
+            
+            // Process audio with new speed
+            processAudio();
+        }
+
+        function toggleEdit() {
+            document.getElementById('tjaPreview').classList.toggle('hidden');
+            document.getElementById('tjaEditor').classList.toggle('hidden');
+        }
+
+        async function packageAndDownload() {
+            const zip = new JSZip();
+            
+            // Add modified TJA
+            const tjaExt = originalTjaName.split('.').pop();
+            const tjaBase = originalTjaName.slice(0, -(tjaExt.length + 1));
+            const newTjaName = `${tjaBase} (x${multiplier.toFixed(2)}).${tjaExt}`;
+            zip.file(newTjaName, document.getElementById('tjaEditor').value);
+
+            // Add modified audio
+            const audioExt = originalAudioName.split('.').pop();
+            const audioBase = originalAudioName.slice(0, -(audioExt.length + 1));
+            const newAudioName = `${audioBase} (x${multiplier.toFixed(2)}).wav`;
+            zip.file(newAudioName, modifiedAudioBlob);
+
+            const content = await zip.generateAsync({type: 'blob'});
+            const url = URL.createObjectURL(content);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${tjaBase} (x${multiplier.toFixed(2)}).zip`;
+            a.click();
+        }
+    </script>
+</body>
+</html>
+
